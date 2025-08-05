@@ -1,7 +1,9 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
+import json
 import logging
+import os
 from typing import Callable
 from instagrapi import Client
 import pyotp
@@ -86,11 +88,23 @@ class InstagramAPIWrapper:
     def get_verification_code(secret) -> str:
         return pyotp.TOTP(secret).now()
 
-    async def login(self, secret_key=None) -> bool:
+    async def _cache_session(self):
+        self._client.dump_settings("username.json")
+
+    async def _set_session_from_cache(self):
+        if os.path.exists("username.json"):
+            session = json.load(open("username.json", "r"))
+            self._client.set_settings(session)
+
+    async def login(self, secret_key=None, use_cache=True) -> bool:
         await self.assert_proxy_works()
+        await self._set_session_from_cache()
         kwargs = dict(username=self.username, password=self.password)
         if secret_key:
             kwargs.update(verification_code=self.get_verification_code(secret_key))
-        logged_in = await self._run_async(self._client.login, **kwargs)
+        async_login = self._run_async(self._client.login, **kwargs)
+        logged_in = await async_login
+        if logged_in:
+            await self._cache_session()
         logger.info(f"logged in successfully? -> {logged_in}")
         return logged_in
