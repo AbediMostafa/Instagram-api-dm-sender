@@ -1,4 +1,5 @@
 instagrapi==2.2.1
+pyotp==2.9.0
 
 # dev
 black==25.1.0

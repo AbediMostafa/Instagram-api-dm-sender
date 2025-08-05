@@ -1,4 +1,2 @@
-
-
 class ProxyNotSetError(RuntimeError):
     pass

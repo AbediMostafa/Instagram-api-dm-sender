@@ -1,4 +1,6 @@
-from instagram_api_mass_dm import *
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from instagram_api_mass_dm import InstagramAPIWrapper
 import logging
 
 logging.basicConfig(
