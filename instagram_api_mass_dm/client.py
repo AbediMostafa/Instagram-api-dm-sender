@@ -8,6 +8,7 @@ from typing import Callable
 from instagrapi import Client
 import pyotp
 
+from instagram_api_mass_dm.consts import CachePrefix
 from instagram_api_mass_dm.exceptions import ProxyNotSetError
 import massdm_cache
 
@@ -26,20 +27,30 @@ class InstagramAPIWrapper:
     password: str
     proxy: str
     _ip: str
+    _cache: massdm_cache.Cache
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self._cache.disconnect()
 
     def __init__(
         self,
         _threadpool: ThreadPoolExecutor,
         username: str = "",
         password: str = "",
-        cache: massdm_cache.Cache | None = None,
         proxy=None,
+        cache: massdm_cache.Cache = None,
+        session_life: int = 24 * 60 * 60,
     ):
         self._threadpool = _threadpool
         self._client = Client()
         self.username = username
         self.password = password
         self._cache = cache
+        self.session_life = session_life
+
         if proxy:
             self.proxy = proxy
             self._client.set_proxy(proxy)
@@ -90,18 +101,27 @@ class InstagramAPIWrapper:
     def get_verification_code(secret) -> str:
         return pyotp.TOTP(secret).now()
 
+    def get_account_id(self):
+        return self._client.user_id
+
     async def _cache_session(self):
         settings = self._client.get_settings()
-        self._cache
+        key = CachePrefix.ACCOUNT_SESSION.format(self.username)
+        await self._cache.set(key, json.dumps(settings), ttl=self.session_life)
 
     async def _set_session_from_cache(self):
-        if os.path.exists("username.json"):
-            session = json.load(open("username.json", "r"))
+        key = CachePrefix.ACCOUNT_SESSION.format(self.username)
+        settings = await self._cache.get(key)
+        if settings:
+            session = json.loads(settings)
             self._client.set_settings(session)
+            return True
+        return False
 
     async def login(self, secret_key=None, use_cache=True) -> bool:
         await self.assert_proxy_works()
-        await self._set_session_from_cache()
+        if use_cache:
+            await self._set_session_from_cache()
         kwargs = dict(username=self.username, password=self.password)
         if secret_key:
             kwargs.update(verification_code=self.get_verification_code(secret_key))
