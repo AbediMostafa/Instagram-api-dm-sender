@@ -9,6 +9,7 @@ from instagrapi import Client
 import pyotp
 
 from instagram_api_mass_dm.exceptions import ProxyNotSetError
+import massdm_cache
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +32,14 @@ class InstagramAPIWrapper:
         _threadpool: ThreadPoolExecutor,
         username: str = "",
         password: str = "",
+        cache: massdm_cache.Cache | None = None,
         proxy=None,
     ):
         self._threadpool = _threadpool
         self._client = Client()
         self.username = username
         self.password = password
-
+        self._cache = cache
         if proxy:
             self.proxy = proxy
             self._client.set_proxy(proxy)
@@ -89,7 +91,8 @@ class InstagramAPIWrapper:
         return pyotp.TOTP(secret).now()
 
     async def _cache_session(self):
-        self._client.dump_settings("username.json")
+        settings = self._client.get_settings()
+        self._cache
 
     async def _set_session_from_cache(self):
         if os.path.exists("username.json"):

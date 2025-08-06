@@ -39,10 +39,20 @@ class TestRedisCache:
         assert await self.cache.get("b") is None
 
     async def test_set_with_ttl(self):
-        await self.cache.set("temp", "123", ttl=1)
+        await self.cache.set("temp", "123", ttl=1, approximate=False)
         value = await self.cache.get("temp")
         assert value == "123"
         await asyncio.sleep(1.2)
+        value = await self.cache.get("temp")
+        assert value is None
+
+    async def test_set_with_approximate_ttl(self):
+        ttl = 5
+        await self.cache.set("temp", "123", ttl=ttl, approximate=False)
+        self.cache.default_cache_approximation = 0.1
+        value = await self.cache.get("temp")
+        assert value == "123"
+        await asyncio.sleep(ttl * (1 + self.cache.default_cache_approximation))
         value = await self.cache.get("temp")
         assert value is None
 
