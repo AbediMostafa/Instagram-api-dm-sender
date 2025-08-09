@@ -10,6 +10,21 @@ services:
     volumes:
       - redis_data:/data
 
+  db:
+    image: postgres:13.1-alpine
+    container_name: postgres_db
+    ports:
+      - "5434:5432"
+    restart: unless-stopped
+    environment:
+      - POSTGRE_USERNAME=arka
+      - POSTGRE_PASSWORD=your_password_here
+      - POSTGRE_DATABASE=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    
+    volumes:
+      - ./postgres_data:/home
+
 volumes:
   redis_data:
-  
+  postgresql_data:
