@@ -3,7 +3,6 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import json
 import logging
-import os
 from typing import Any, Callable
 from instagrapi import Client
 import pyotp
@@ -152,7 +151,7 @@ class InstagramAPIWrapper:
             raise Exception("Couldn't login user with either password or session")
         logger.info(f"login_success: {self.username}")
         return True
-    
+
     @staticmethod
     def get_verification_code(secret) -> str:
         return pyotp.TOTP(secret).now() if secret else ""

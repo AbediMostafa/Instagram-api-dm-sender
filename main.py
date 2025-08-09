@@ -4,6 +4,7 @@ from instagram_api_mass_dm import InstagramAPIWrapper
 import logging
 
 from massdm_cache.redis import RedisCache
+import settings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,12 +17,12 @@ async def main():
     cach = await RedisCache.create()
     async with InstagramAPIWrapper(
         ThreadPoolExecutor(10),
-        username="choob_lab_style",
-        password="i39vflh7dmsfldf25",
+        username=settings.TestAccountData.username,
+        password=settings.TestAccountData.password,
         cache=cach,
-        proxy="http://germanproxy42de:HxxDt7rfpwWn@x462.fxdx.in:13916",
+        proxy=settings.General.PROXY,
     ) as client:
-        await client.login("6exvtnvolefjwqq7etlkjuh25qle2bv7")
+        await client.login(settings.TestAccountData.secret)
 
 
 if __name__ == "__main__":
