@@ -49,7 +49,7 @@ class InstagramAPIWrapper:
         self.username = username
         self.password = password
         self._cache = cache
-        self.session_life = session_life
+        self.session_life_in_cache = session_life
 
         if proxy:
             self.proxy = proxy
@@ -162,7 +162,7 @@ class InstagramAPIWrapper:
     async def _cache_session(self):
         settings = self._client.get_settings()
         key = CachePrefix.ACCOUNT_SESSION.format(self.username)
-        await self._cache.set(key, json.dumps(settings), ttl=self.session_life)
+        return await self._cache.set(key, json.dumps(settings), ttl=self.session_life_in_cache)
 
     async def get_session_from_cache(self) -> Any:
         key = CachePrefix.ACCOUNT_SESSION.format(self.username)
@@ -176,6 +176,6 @@ class InstagramAPIWrapper:
 
         login = lambda: self.login_scenario(session=session, secret=secret_key)
         logged_in = await self._run_async(login)
-        if logged_in:
+        if logged_in and self._cache:
             await self._cache_session()
         return logged_in
