@@ -9,7 +9,7 @@ class Cache(ABC):
         raise NotImplementedError("Initiation logic must be implemented")
 
     @abstractmethod
-    async def get(self, key):
+    async def get(self, key) -> Any:
         pass
 
     @abstractmethod

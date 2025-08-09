@@ -1,2 +1,2 @@
 class CachePrefix:
-    ACCOUNT_SESSION = 'account_{}'
+    ACCOUNT_SESSION = "account_{}"
