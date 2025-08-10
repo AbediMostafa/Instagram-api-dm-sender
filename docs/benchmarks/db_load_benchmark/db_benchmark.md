@@ -100,7 +100,7 @@ average latency per thread 0.068 - Threads: 14 - Total Latency: 1.19654226303100
 - CPU‌ usage 
 
 ## PGBouncer vs Playhouse
-Playhouse was really better than PGBouncer(with the same logic told in the top of the doc only with `200,000 records`)
+Playhouse was slightly better than PGBouncer(with the same logic told in the top of the doc only with `200,000 records`) and both were significantly efficient than non-pooled connection
 
 ### PGBouncer 
 ```
