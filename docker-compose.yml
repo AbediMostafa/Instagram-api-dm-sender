@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   redis:
@@ -17,14 +17,26 @@ services:
       - "5434:5432"
     restart: unless-stopped
     environment:
-      - POSTGRE_USERNAME=arka
-      - POSTGRE_PASSWORD=your_password_here
-      - POSTGRE_DATABASE=postgres
-      - POSTGRES_HOST_AUTH_METHOD=trust
-    
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=arka
+      - POSTGRES_DB=instagram_dm_sender
+      - POSTGRES_HOST_AUTH_METHOD=md5
     volumes:
+      - postgres_data:/var/lib/postgresql/data
       - ./postgres_data:/home
-
+  
+  pgbouncer:
+    image: brainsam/pgbouncer:1.7.2
+    environment:
+      DB_HOST: db
+      DB_USER: postgres           # define credentials
+      DB_PASSWORD: arka       # define credentials
+      DB_port: 5432               # define database
+    links:
+      - db:db
+    ports:
+      - 6432:6432    
+    
 volumes:
   redis_data:
-  postgresql_data:
+  postgres_data:

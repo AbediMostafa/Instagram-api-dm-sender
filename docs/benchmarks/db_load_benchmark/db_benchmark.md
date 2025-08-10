@@ -85,7 +85,7 @@ average latency per thread 0.068 - Threads: 14 - Total Latency: 1.19654226303100
 ```
 
 ## Conclusion
-
+![alt text](image-1.png)
 - The optimum state of concurrency is using `7 to 11 threads`; Using more threads than this only increases latency without increasing the throughput. At this level of concurrency the CPU usage was about 100%.
 
 | Number | CPU Usage |
@@ -98,3 +98,56 @@ average latency per thread 0.068 - Threads: 14 - Total Latency: 1.19654226303100
 
 - Using **connection pool** has a significant impact on both throughput and latency.
 - CPU‌ usage 
+
+## PGBouncer vs Playhouse
+Playhouse was really better than PGBouncer(with the same logic told in the top of the doc only with `200,000 records`)
+
+### PGBouncer 
+```
+╰─>$ python -m scripts.db_load
+average latency per thread 0.027 - Threads: 1 - Total Latency: 4.106290102005005
+average latency per thread 0.033 - Threads: 2 - Total Latency: 2.922060489654541
+average latency per thread 0.039 - Threads: 3 - Total Latency: 2.519289016723633
+average latency per thread 0.045 - Threads: 4 - Total Latency: 2.4054853916168213
+average latency per thread 0.051 - Threads: 5 - Total Latency: 2.2544989585876465
+average latency per thread 0.057 - Threads: 6 - Total Latency: 2.298245906829834
+average latency per thread 0.063 - Threads: 7 - Total Latency: 2.1614620685577393
+average latency per thread 0.07 - Threads: 8 - Total Latency: 2.218318223953247
+average latency per thread 0.076 - Threads: 9 - Total Latency: 2.128183126449585
+average latency per thread 0.084 - Threads: 10 - Total Latency: 2.3813114166259766
+average latency per thread 0.093 - Threads: 11 - Total Latency: 2.48358416557312
+
+```
+### PGBouncer + Playhouse
+```
+─>$ python -m scripts.db_load
+average latency per thread 0.027 - Threads: 1 - Total Latency: 4.055471897125244
+average latency per thread 0.031 - Threads: 2 - Total Latency: 2.6963963508605957
+average latency per thread 0.037 - Threads: 3 - Total Latency: 2.3665339946746826
+average latency per thread 0.042 - Threads: 4 - Total Latency: 2.253509044647217
+average latency per thread 0.048 - Threads: 5 - Total Latency: 2.1446127891540527
+average latency per thread 0.054 - Threads: 6 - Total Latency: 2.071953296661377
+average latency per thread 0.059 - Threads: 7 - Total Latency: 2.0436041355133057
+average latency per thread 0.065 - Threads: 8 - Total Latency: 2.0070104598999023
+average latency per thread 0.071 - Threads: 9 - Total Latency: 2.005492925643921
+average latency per thread 0.078 - Threads: 10 - Total Latency: 2.134134531021118
+average latency per thread 0.086 - Threads: 11 - Total Latency: 2.3380796909332275
+```
+
+### Playhouse
+```
+╰─>$ python -m scripts.db_load
+average latency per thread 0.025 - Threads: 1 - Total Latency: 3.830418109893799
+average latency per thread 0.03 - Threads: 2 - Total Latency: 2.6493985652923584
+average latency per thread 0.036 - Threads: 3 - Total Latency: 2.3663153648376465
+average latency per thread 0.042 - Threads: 4 - Total Latency: 2.243662118911743
+average latency per thread 0.048 - Threads: 5 - Total Latency: 2.1200380325317383
+average latency per thread 0.053 - Threads: 6 - Total Latency: 2.0384085178375244
+average latency per thread 0.059 - Threads: 7 - Total Latency: 2.014775514602661
+average latency per thread 0.064 - Threads: 8 - Total Latency: 1.981492280960083
+average latency per thread 0.07 - Threads: 9 - Total Latency: 1.9696934223175049
+average latency per thread 0.076 - Threads: 10 - Total Latency: 1.9294767379760742
+average latency per thread 0.082 - Threads: 11 - Total Latency: 2.09770512580871
+```
+![charts for benchmark](image.png)
+###

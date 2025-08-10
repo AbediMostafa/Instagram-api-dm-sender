@@ -16,6 +16,7 @@ database_name = os.getenv("POSTGRES_DB", "instagram_dm_sender")
 # Set up the database connection
 # database = PostgresqlDatabase(
 #     database_name,
+#     password=password,
 #     user=user,
 #     host=host,
 #     port=port,
@@ -25,7 +26,8 @@ database = PooledPostgresqlDatabase(
     database_name,
     user=user,
     host=host,
-    port=port,
+    port=port, 
+    password=password,
     max_connections=200,  # pool size, adjust as needed
     stale_timeout=100,
 )

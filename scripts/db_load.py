@@ -12,13 +12,11 @@ total_time = []
 
 
 def query_accounts_with_date_filter():
-    # Define a datetime threshold — e.g., accounts updated in the last 30 days
     threshold_date = datetime.now() - timedelta(days=10)
     t0 = time.time()
     t0c = time.process_time()
 
     with Account._meta.database.connection_context():
-        # Filter active accounts updated after threshold_date
         filtered_accounts = Account.select().where(
             (Account.is_active == 1) & (Account.updated_at > threshold_date)
         )
@@ -27,7 +25,6 @@ def query_accounts_with_date_filter():
 
         # Example: fetch first 5 filtered accounts
         sample_accounts = list(filtered_accounts.limit(5))
-    # print(sample_accounts)
     t = time.process_time()
     total_t = time.time() - t0
     per_thread_time.append(total_t)
@@ -36,15 +33,32 @@ def query_accounts_with_date_filter():
     return count, sample_accounts
 
 
-for i in [4] * 50:
-    threads = i
-    t0 = time.time()
-    with ThreadPoolExecutor(threads) as executor:
-        futures = [
-            executor.submit(query_accounts_with_date_filter) for i in range(int(150))
-        ]
-        for future in as_completed(futures):
-            result = future.result()  # get the return value of task()
-    t1 = time.time()
-    av = average(per_thread_time)
-    print(f"average latency per thread {round(av, 3)} - Threads: {threads} - Total Latency: {t1-t0}")
+if __name__ == "__main__":
+    FILL_DATABASE = False
+    MIN_THREADS = 1
+    MAX_THREADS = 20
+    TOTAL_QUERIES = 150
+    if FILL_DATABASE:
+        cursor = Account._meta.database.execute_sql(
+            """
+        COPY accounts (
+        proxy, color, screen_resolution, profile, category, secret_key, username, password, name, bio, email, profile_pic_url, instagram_state, app_state, avatar_changed, username_changed, initial_posts_deleted, has_enough_posts, is_used, is_active, is_public, web_session, mobile_session, log, updated_at, next_login
+        ) FROM '/home/accounts.csv' CSV HEADER;
+        """
+        )
+
+    for i in range(MIN_THREADS, MAX_THREADS):
+        threads = i
+        t0 = time.time()
+        with ThreadPoolExecutor(threads) as executor:
+            futures = [
+                executor.submit(query_accounts_with_date_filter)
+                for i in range(int(TOTAL_QUERIES))
+            ]
+            for future in as_completed(futures):
+                result = future.result()
+        t1 = time.time()
+        av = average(per_thread_time)
+        print(
+            f"average latency per thread {round(av, 3)} - Threads: {threads} - Total Latency: {t1-t0}"
+        )
