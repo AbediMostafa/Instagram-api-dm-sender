@@ -35,6 +35,6 @@ class TestDa(TestDatabase):
         ],
         indirect=True,
     )
-    async def test_inactivate_(self, account):
+    async def test_pick_ready_ones(self, account):
         ready_accounts = await models.Account.pick_ready_ones()
-        assert len(ready_accounts) == 1
+        assert len(ready_accounts) == 2
