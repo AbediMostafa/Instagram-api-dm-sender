@@ -11,6 +11,7 @@ services:
       - redis_data:/data
 
   db:
+    mem_limit: 10g
     image: postgres:13.1-alpine
     container_name: postgres_db
     ports:
@@ -31,11 +32,17 @@ services:
       DB_HOST: db
       DB_USER: postgres           # define credentials
       DB_PASSWORD: arka       # define credentials
-      DB_port: 5432               # define database
-    links:
-      - db:db
+      DB_port: 5432
+      PGBOUNCER_MAX_CLIENT_CONN: 500      # Increase as needed
+      PGBOUNCER_DEFAULT_POOL_SIZE: 100    # Increase as needed
+      PGBOUNCER_POOL_MODE: transaction               # define database
+      PGBOUNCER_QUERY_WAIT_TIMEOUT: 300
+    volumes:
+      - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+    depends_on:
+      - db
     ports:
-      - 6432:6432    
+      - 6434:6432    
     
 volumes:
   redis_data:

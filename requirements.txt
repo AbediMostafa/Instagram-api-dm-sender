@@ -1,8 +1,13 @@
 instagrapi==2.2.1
 pyotp==2.9.0
 redis[hiredis]>=4.6.0
+anyio~=4.7.0
+tortoise-orm~=0.25.1
+asyncpg~=0.30.0
+
 
 # dev
 black==25.1.0
 pytest==8.4.1
+pytest-asyncio==1.1.0
 pytest-asyncio==1.1.0

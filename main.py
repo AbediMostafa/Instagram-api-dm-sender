@@ -6,6 +6,7 @@ import logging
 from massdm_cache.redis import RedisCache
 import settings
 
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
@@ -20,7 +21,7 @@ async def main():
         username=settings.TestAccountData.username,
         password=settings.TestAccountData.password,
         cache=cach,
-        proxy=settings.General.PROXY,
+        proxy=settings.General.proxy,
     ) as client:
         await client.login(settings.TestAccountData.secret)
 
