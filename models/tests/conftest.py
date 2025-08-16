@@ -3,12 +3,11 @@ import pytest
 import pytest_asyncio
 from tortoise import Tortoise
 from models.base import init
-from models.models import Account
+from models.models import Account, Category
 import settings
 from faker import Faker
 
-
-from tortoise import Tortoise
+fake = Faker("fa_IR")
 
 
 @pytest_asyncio.fixture
@@ -23,19 +22,37 @@ async def db():
     await teardownModels()
 
 
-fake = Faker()
+@pytest_asyncio.fixture
+async def category(request: pytest.FixtureRequest):
+    Model = Category
+    kwargs_tuple = getattr(request, "param", tuple())
+    if len(kwargs_tuple) == 0:
+        kwargs_tuple = [{}]
+    objects = []
+    kwargs_dict = {
+        "title": fake.catch_phrase(),
+        "description": fake.text(max_nb_chars=200),
+        "number_of_follow_ups": fake.random_int(min=0, max=10),
+        "hour_interval": fake.random_int(min=1, max=72),
+        "updated_at": datetime.now(),
+    }
+    for kwargs in kwargs_tuple:
+        kwargs_dict.update(kwargs)
+        objects.append(Model(**kwargs_dict))
+    yield await Model.bulk_create(objects)
 
 
 @pytest_asyncio.fixture
-async def account(request: pytest.FixtureRequest):
+async def account(category, request: pytest.FixtureRequest):
     kwargs_tuple = request.param
     accounts = []
+
     kwargs_dict = dict(
         proxy=fake.random_int(min=1000, max=9999),
         color=fake.random_int(min=0, max=16777215),  # RGB range
         screen_resolution=fake.random_int(min=720, max=2160),
         profile=fake.random_int(min=1, max=1000),
-        category=fake.random_int(min=1, max=20),
+        category=category,
         secret_key=fake.uuid4(),
         username=fake.user_name(),
         password=fake.password(),

@@ -21,17 +21,17 @@ from models.tests.conftest import TestDatabase
 
 
 @pytest.mark.asyncio
-class TestDa(TestDatabase):
+class TestSelectors(TestDatabase):
 
     @pytest.mark.parametrize(
         "account",
         [
-            [
+            (
                 {"next_login": datetime.now() - timedelta(minutes=100), "is_used": 0},
                 {"next_login": datetime.now() + timedelta(minutes=5), "is_used": 0},
                 {"next_login": datetime.now() - timedelta(minutes=1), "is_used": 1},
                 {"next_login": datetime.now() - timedelta(minutes=4), "is_used": 0},
-            ]
+            )
         ],
         indirect=True,
     )

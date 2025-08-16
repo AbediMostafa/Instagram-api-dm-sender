@@ -9,7 +9,7 @@ class Account(models.Model):
     screen_resolution = fields.BigIntField(null=True)
     profile = fields.BigIntField(null=True)
 
-    category = fields.BigIntField(null=True)
+    category = fields.ForeignKeyField('models.Category', null=True)
     secret_key = fields.CharField(max_length=255, null=True)
     username = fields.CharField(max_length=255)
     password = fields.CharField(max_length=255)
@@ -110,3 +110,4 @@ class DmPost(models.Model):
 
     class Meta:
         table_name = "dm_posts"
+
