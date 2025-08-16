@@ -29,7 +29,7 @@ class Account(models.Model):
     web_session = fields.TextField(null=True)
     mobile_session = fields.TextField(null=True)
     log = fields.TextField(null=True)
-    updated_at = fields.DatetimeField(null=True)
+    updated_at = fields.DatetimeField(null=True)  # TODO: add timezone
     next_login = fields.DatetimeField(null=True)
 
     class Meta:
@@ -41,3 +41,72 @@ class Account(models.Model):
         This is the logic for selection of accounts that are ready to work at the moment
         """
         return await cls.filter(next_login__lt=datetime.now(), is_used=0)
+
+
+class User(models.Model):
+    username = fields.CharField(max_length=256)
+    password = fields.CharField(max_length=256)
+
+    class Meta:
+        table = "users"
+
+
+class Category(models.Model):
+    title = fields.CharField(max_length=256)
+    description = fields.TextField(null=True)
+    number_of_follow_ups = fields.IntField(default=0)
+    hour_interval = fields.IntField(default=24)  # New field added
+    updated_at = fields.DatetimeField(null=True, auto_now=True)
+
+    class Meta:
+        table = "categories"
+
+
+class Spintax(models.Model):
+    name = fields.CharField(max_length=256)
+    times = fields.IntField()
+    text = fields.TextField()
+    category = fields.ForeignKeyField(
+        "models.Category", related_name="commands", null=True
+    )
+    user_id = fields.ForeignKeyField("models.User")
+    updated_at = fields.DatetimeField(null=True)
+
+    @classmethod
+    def get_value(cls, times, category=None, default=None):
+        query = cls.filter(times=times)
+        if category is not None:
+            query = query.filter(category=category)
+
+        record = query.first()
+        return record.text if record else default
+
+    class Meta:
+        table = "spintaxes"
+
+
+class Lead(models.Model):
+    username = fields.CharField(max_length=255)
+    instagram_id = fields.BigIntField(null=True)
+    times = fields.IntField(default=0)
+    last_state = fields.CharField(max_length=255, default="free")
+    account = fields.ForeignKeyField("models.Account", backref="leads", null=True)
+    category = fields.ForeignKeyField("models.Category", related_name="leads", null=True)
+
+    last_command_send_date = fields.DatetimeField(null=True)
+
+    class Meta:
+        table = "leads"
+
+
+class DmPost(models.Model):
+    title = fields.CharField(max_length=255)
+    category = fields.ForeignKeyField(
+        "models.Category", related_name="lead_sources", null=True
+    )
+    description = fields.TextField(null=True)
+    # times :turn of message
+    times = fields.IntField(default=0)
+
+    class Meta:
+        table_name = "dm_posts"

@@ -32,3 +32,6 @@ class Database:
     password = getenv("MASSDM_DB_PASSWORD", "arka")
     min_connections = int(getenv("MASSDM_DB_MIN_CONNECTIONS", "5"))
     max_connections = int(getenv("MASSDM_DB_MAX_CONNECTIONS", "60"))
+
+class TestDatabase(Database):
+    database = getenv("MASSDM_DB_NAME", "test_instagram_dm_sender")

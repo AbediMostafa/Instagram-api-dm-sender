@@ -8,15 +8,20 @@ import settings
 from faker import Faker
 
 
-from tortoise import Tortoise, run_async
+from tortoise import Tortoise
 
 
 @pytest_asyncio.fixture
 async def db():
-    kwargs = {k: v for k, v in vars(settings.Database).items() if not k.startswith("_")}
+    kwargs = {
+        k: getattr(settings.TestDatabase, k)
+        for k in dir(settings.TestDatabase)
+        if not k.startswith("_")
+    }
     await init(**kwargs, migrate_schema=True)
     yield
     await teardownModels()
+
 
 fake = Faker()
 
