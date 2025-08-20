@@ -1,5 +1,8 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+
+from django.core.cache import cache
+from db import setup_django
 from instagram_api_mass_dm import InstagramAPIWrapper
 import logging
 
@@ -15,15 +18,15 @@ logging.basicConfig(
 
 
 async def main():
-    cach = await RedisCache.create()
-    async with InstagramAPIWrapper(
-        ThreadPoolExecutor(10),
+    setup_django()
+    cach = cache
+    with InstagramAPIWrapper(
         username=settings.TestAccountData.username,
         password=settings.TestAccountData.password,
         cache=cach,
         proxy=settings.General.proxy,
     ) as client:
-        await client.login(settings.TestAccountData.secret)
+        client.login(settings.TestAccountData.secret)
 
 
 if __name__ == "__main__":

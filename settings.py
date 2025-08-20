@@ -1,3 +1,4 @@
+from pathlib import Path
 from os import getenv
 
 
@@ -15,7 +16,8 @@ class Mode:
 
 class General:
     proxy = getenv(
-        "MASSDM_PROXY", "http://germanproxy42de:HxxDt7rfpwWn@x462.fxdx.in:13916"
+        "MASSDM_PROXY",
+        "239c1e03149f4688d9b7__cr.de:d4c552dfbab2110c@gw.dataimpulse.com:10003",
     )
     runtime_mode = getenv("MASSDM_RUNITME_MODE", Mode.test)
 
@@ -33,5 +35,50 @@ class Database:
     min_connections = int(getenv("MASSDM_DB_MIN_CONNECTIONS", "5"))
     max_connections = int(getenv("MASSDM_DB_MAX_CONNECTIONS", "60"))
 
+
 class TestDatabase(Database):
     database = getenv("MASSDM_DB_NAME", "test_instagram_dm_sender")
+
+
+BASE_DIR = Path(__file__).resolve().parent
+
+INSTALLED_APPS = ["db.apps.DbConfig"]
+
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": getenv("POSTGRES_DB", "instagram_dm_sender"),
+        "USER": getenv("POSTGRES_USER", "postgres"),
+        "PASSWORD": getenv("POSTGRES_PASSWORD", "arka"),
+        "HOST": getenv("POSTGRES_HOST", "localhost"),
+        "PORT": int(getenv("POSTGRES_PORT", "5434")),
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": (
+            getenv("REDIS_DEFAULT_CACHE", "redis://localhost:6379/0")
+            if not Mode.test
+            else "redis://localhost:6379/15"
+        ),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 100,
+                "retry_on_timeout": True,
+            },
+            "SENTINEL_KWARGS": {
+                "socket_timeout": 0.1,
+            },
+        },
+    }
+}
+
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
+USE_I18N = True
+USE_TZ = True
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

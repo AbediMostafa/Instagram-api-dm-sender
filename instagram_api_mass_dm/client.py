@@ -1,9 +1,6 @@
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 import json
 import logging
-from typing import Any, Callable
+from typing import Any
 from instagrapi import Client
 import pyotp
 
@@ -15,36 +12,27 @@ import massdm_cache
 logger = logging.getLogger(__name__)
 
 
-async def run_async(executor, callable: Callable, *args, **kwargs):
-    loop = asyncio.get_running_loop()
-    func = partial(callable, *args, **kwargs)
-    return await loop.run_in_executor(executor, func)
-
-
 class InstagramAPIWrapper:
-    _threadpool: ThreadPoolExecutor
     username: str
     password: str
     proxy: str
     _ip: str
-    _cache: massdm_cache.Cache
+    _cache: Any
 
-    async def __aenter__(self):
+    def __enter__(self):
         return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self._cache.disconnect()
-
+    
+    def __exit__(self, *args, **kwargs): 
+        pass
+    
     def __init__(
         self,
-        _threadpool: ThreadPoolExecutor,
         username: str = "",
         password: str = "",
         proxy=None,
-        cache: massdm_cache.Cache = None,
+        cache=None,
         session_life: int = 24 * 60 * 60,
     ):
-        self._threadpool = _threadpool
         self._client = Client()
         self.username = username
         self.password = password
@@ -54,9 +42,11 @@ class InstagramAPIWrapper:
         if proxy:
             self.proxy = proxy
             self._client.set_proxy(proxy)
+        else:
+            self.proxy = ""
         self._ip = ""
 
-    async def _send_public_request(
+    def _send_public_request(
         self,
         url,
         data=None,
@@ -67,8 +57,7 @@ class InstagramAPIWrapper:
         timeout=None,
         update_headers=None,
     ):
-        return await self._run_async(
-            self._client._send_public_request,
+        return self._client._send_public_request(
             url,
             data,
             params,
@@ -79,23 +68,23 @@ class InstagramAPIWrapper:
             update_headers,
         )
 
-    async def assert_proxy_works(self):
+    def assert_proxy_works(self):
         logger.debug("testing proxy...")
         ip_detector_server = "https://api.ipify.org/"
         self._client.set_proxy("")
-        before_ip = await self._send_public_request(ip_detector_server)
+        before_ip = self._send_public_request(ip_detector_server)
         logger.debug(f"before IP: {before_ip}")
 
+        if not self.proxy:
+            raise ProxyNotSetError("No proxy configured")
+
         self._client.set_proxy(self.proxy)
-        after_ip = await self._send_public_request(ip_detector_server)
+        after_ip = self._send_public_request(ip_detector_server)
         logger.debug(f"after IP: {after_ip}")
         if before_ip == after_ip:
             self._client.set_proxy("")
             raise ProxyNotSetError("Proxy is not set ")
         self._ip = after_ip
-
-    async def _run_async(self, callable: Callable, *args, **kwargs):
-        return await run_async(self._threadpool, callable, *args, **kwargs)
 
     def login_scenario(self, session: dict = {}, secret: str = ""):
         """
@@ -159,23 +148,25 @@ class InstagramAPIWrapper:
     def get_account_id(self):
         return self._client.user_id
 
-    async def _cache_session(self):
+    def _cache_session(self):
+        if not self._cache:
+            return
         settings = self._client.get_settings()
         key = CachePrefix.ACCOUNT_SESSION.format(self.username)
-        return await self._cache.set(key, json.dumps(settings), ttl=self.session_life_in_cache)
+        self._cache.set(key, json.dumps(settings), timeout=self.session_life_in_cache)
 
-    async def get_session_from_cache(self) -> Any:
+    def get_session_from_cache(self) -> Any:
+        if not self._cache:
+            return None
         key = CachePrefix.ACCOUNT_SESSION.format(self.username)
-        settings = await self._cache.get(key)
+        settings = self._cache.get(key)
         if settings is not None:
             return json.loads(settings)
 
-    async def login(self, secret_key: str = "") -> bool:
-        await self.assert_proxy_works()
-        session = await self.get_session_from_cache()
-
-        login = lambda: self.login_scenario(session=session, secret=secret_key)
-        logged_in = await self._run_async(login)
+    def login(self, secret_key: str = "") -> bool:
+        self.assert_proxy_works()
+        session = self.get_session_from_cache()
+        logged_in = self.login_scenario(session=session, secret=secret_key)
         if logged_in and self._cache:
-            await self._cache_session()
+            self._cache_session()
         return logged_in
