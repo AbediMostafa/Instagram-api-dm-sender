@@ -1,3 +1,4 @@
+import multiprocessing
 from pathlib import Path
 from os import getenv
 
@@ -14,12 +15,22 @@ class Mode:
     production = "PRO"
 
 
+num_cpus = multiprocessing.cpu_count()
+
+
 class General:
     proxy = getenv(
         "MASSDM_PROXY",
         "239c1e03149f4688d9b7__cr.de:d4c552dfbab2110c@gw.dataimpulse.com:10003",
     )
     runtime_mode = getenv("MASSDM_RUNITME_MODE", Mode.test)
+    max_workers = int(getenv("MASSDM_MAX_WORKERS", num_cpus * 3))
+
+def string_int_to_list(string):
+    return [int(i) for i in string.split(',')]
+
+class Sleep:
+    before_login = string_int_to_list(getenv("MASSDM_SLEEP_BEFORE_LOGIN", '10,20'))
 
 
 class Cache:
@@ -40,20 +51,44 @@ class TestDatabase(Database):
     database = getenv("MASSDM_DB_NAME", "test_instagram_dm_sender")
 
 
+class AccountSettings:
+    buffer_min_size = int(getenv("MASSDM_ACCOUNT_BUFFER_MAX_SIZE", 200))
+    buffer_max_size = int(getenv("MASSDM_ACCOUNT_BUFFER_MIN_SIZE", 300))
+    session_life = int(getenv("MASSDM_ACCOUNT_SESSION_LIFE", 24 * 60 * 60))
+
+
+if getenv("PYTEST_CURRENT_TEST"):
+    General.runtime_mode = Mode.test
+
+
+def is_testing():
+    return General.runtime_mode == Mode.test
+
+
 BASE_DIR = Path(__file__).resolve().parent
 
-INSTALLED_APPS = ["db.apps.DbConfig"]
+INSTALLED_APPS = ["db.apps.DbConfig", "django_apscheduler"]
 
+TEST_DB = {
+    "ENGINE": "django.db.backends.sqlite3",
+    "NAME": ":memory:",  # in-memory DB for fast tests
+}
+DB = {
+    "ENGINE": "django.db.backends.postgresql",
+    "NAME": getenv("POSTGRES_DB", "instagram_dm_sender"),
+    "USER": getenv("POSTGRES_USER", "arka"),
+    "PASSWORD": getenv("POSTGRES_PASSWORD", "arka"),
+    "HOST": getenv("POSTGRES_HOST", "localhost"),
+    "PORT": int(getenv("POSTGRES_PORT", "5435")),
+    "CONN_MAX_AGE": 60,
+}
+db_settings = DB
+
+if is_testing():
+    db_settings = TEST_DB
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": getenv("POSTGRES_DB", "instagram_dm_sender"),
-        "USER": getenv("POSTGRES_USER", "postgres"),
-        "PASSWORD": getenv("POSTGRES_PASSWORD", "arka"),
-        "HOST": getenv("POSTGRES_HOST", "localhost"),
-        "PORT": int(getenv("POSTGRES_PORT", "5434")),
-    }
+    "default": DB,  # FIXME
 }
 
 CACHES = {

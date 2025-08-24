@@ -1,33 +1,51 @@
-import asyncio
+"""
+This module is the place that all the other project pacakges(moduels)
+can be imported and is the highest level
+"""
+
 from concurrent.futures import ThreadPoolExecutor
-
-from django.core.cache import cache
-from db import setup_django
-from instagram_api_mass_dm import InstagramAPIWrapper
 import logging
-
-from massdm_cache.redis import RedisCache
-import settings
+from threading import Thread
+from db.manager import AccountSelector
+from instagram_api_massdm.scheduler import Scheduler
+from instagram_api_massdm.workflows import Login
+from instagram_api_wrapper.client import InstagramAPIWrapper
+from settings import AccountSettings, General
+from django.core.cache import cache
 
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
     handlers=[logging.FileHandler("app.log"), logging.StreamHandler()],
 )
 
 
-async def main():
-    setup_django()
-    cach = cache
-    with InstagramAPIWrapper(
-        username=settings.TestAccountData.username,
-        password=settings.TestAccountData.password,
-        cache=cach,
-        proxy=settings.General.proxy,
-    ) as client:
-        client.login(settings.TestAccountData.secret)
+def run_jobs(account_selector: AccountSelector):
+    while True:
+        account = account_selector.get()
+        api = InstagramAPIWrapper(
+            account.username,
+            account.password,
+            proxy=General.proxy,
+            cache=cache,
+            session_life=AccountSettings.session_life,
+        )
+        Login(api=api, account=account)()
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+def start():
+    selector = AccountSelector(
+        buffer_max_size=AccountSettings.buffer_max_size,
+        buffer_min_size=AccountSettings.buffer_min_size,
+        watch_interval=10,
+    )
+    selector.fill()
+    selector.refresh()  # start the selector
+    executor = ThreadPoolExecutor(max_workers=General.max_workers)
+    Thread(target=selector.watch_accounts).start()
+    for _ in range(General.max_workers):
+        executor.submit(run_jobs, selector)
+
+
+start()

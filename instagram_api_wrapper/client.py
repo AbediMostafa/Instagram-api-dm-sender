@@ -1,13 +1,13 @@
 import json
 import logging
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional
 from instagrapi import Client
 import pyotp
 
-from instagram_api_mass_dm.consts import CachePrefix
-from instagram_api_mass_dm.exceptions import ProxyNotSetError
+from instagram_api_wrapper.consts import CachePrefix
+from instagram_api_wrapper.exceptions import ProxyNotSetError
 from instagrapi.exceptions import LoginRequired
-import massdm_cache
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +21,10 @@ class InstagramAPIWrapper:
 
     def __enter__(self):
         return self
-    
-    def __exit__(self, *args, **kwargs): 
+
+    def __exit__(self, *args, **kwargs):
         pass
-    
+
     def __init__(
         self,
         username: str = "",
@@ -170,3 +170,62 @@ class InstagramAPIWrapper:
         if logged_in and self._cache:
             self._cache_session()
         return logged_in
+
+    def get_user_id(self, username: str) -> Optional[int]:
+        """
+        Get the Instagram user ID for a given username.
+
+        Returns:
+            int if user exists, None otherwise
+        """
+        user_id = self._client.user_id_from_username(username)
+        return int(user_id)
+
+    def send_dm(
+        self,
+        user_id: int,
+        message: str = "",
+        media_path: Optional[str] = None,
+        media_type: Optional[str] = None,
+    ) -> bool:
+        """
+        Sends a direct message to the specified user_id.
+        Optionally sends media (photo or video) along with the message.
+        Caches session after sending if cache is enabled.
+
+        media_type: 'photo' or 'video'
+        media_path: path to the media file (str or Path)
+        """
+        try:
+            # Convert Path to string if needed
+            if media_path:
+                media_path = str(media_path)
+
+            # Send media first if provided
+            if media_path and media_type:
+                if media_type == "photo":
+                    self._client.direct_send_photo(
+                        path=Path(media_path), user_ids=[user_id]
+                    )
+                elif media_type == "video":
+                    self._client.direct_send_video(
+                        path=Path(media_path), user_ids=[user_id]
+                    )
+                else:
+                    logger.error(f"Unsupported media_type: {media_type}")
+                    return False
+
+            # Send optional text message
+            if message:
+                self._client.direct_send(text=message, user_ids=[user_id])
+
+            # Cache session if enabled
+            if getattr(self, "_cache", False):
+                self._cache_session()
+
+            logger.info(f"DM sent to user_id: {user_id} (media: {media_path})")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to send DM to user_id {user_id}: {e}")
+            return False
